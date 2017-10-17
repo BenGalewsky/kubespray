@@ -65,12 +65,17 @@ resource "openstack_compute_instance_v2" "k8s_master" {
     }
     security_groups = [ "${openstack_compute_secgroup_v2.k8s_master.name}",
                         "${openstack_compute_secgroup_v2.k8s.name}" ]
-    floating_ip = "${element(openstack_networking_floatingip_v2.k8s_master.*.address, count.index)}"
     metadata = {
         ssh_user = "${var.ssh_user}"
         kubespray_groups = "etcd,kube-master,kube-node,k8s-cluster,vault"
     }
-    
+
+}
+
+resource "openstack_compute_floatingip_associate_v2" "k8s_master" {
+    count = "${var.number_of_k8s_masters}"
+    floating_ip = "${element(openstack_networking_floatingip_v2.k8s_master.*.address, count.index)}"
+    instance_id = "${element(openstack_compute_instance_v2.k8s_master.*.id, count.index)}"
 }
 
 resource "openstack_compute_instance_v2" "k8s_master_no_etcd" {
@@ -84,13 +89,19 @@ resource "openstack_compute_instance_v2" "k8s_master_no_etcd" {
     }
     security_groups = [ "${openstack_compute_secgroup_v2.k8s_master.name}",
                         "${openstack_compute_secgroup_v2.k8s.name}" ]
-    floating_ip = "${element(openstack_networking_floatingip_v2.k8s_master.*.address, count.index + var.number_of_k8s_masters)}"
     metadata = {
         ssh_user = "${var.ssh_user}"
         kubespray_groups = "kube-master,kube-node,k8s-cluster,vault"
     }
-    
+
 }
+
+resource "openstack_compute_floatingip_associate_v2" "k8s_master_no_etcd" {
+    count = "${var.number_of_k8s_masters_no_etcd}"
+    floating_ip = "${element(openstack_networking_floatingip_v2.k8s_master.*.address, count.index)}"
+    instance_id = "${element(openstack_compute_instance_v2.k8s_master_no_etcd.*.id, count.index)}"
+}
+
 
 resource "openstack_compute_instance_v2" "etcd" {
     name = "${var.cluster_name}-etcd-${count.index+1}"
@@ -108,7 +119,7 @@ resource "openstack_compute_instance_v2" "etcd" {
     }
     provisioner "local-exec" {
         command = "sed s/USER/${var.ssh_user}/ contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element(openstack_networking_floatingip_v2.k8s_master.*.address, 0)}/ > contrib/terraform/openstack/group_vars/no-floating.yml"
-    } 
+    }
 }
 
 
@@ -163,11 +174,16 @@ resource "openstack_compute_instance_v2" "k8s_node" {
         name = "${var.network_name}"
     }
     security_groups = ["${openstack_compute_secgroup_v2.k8s.name}" ]
-    floating_ip = "${element(openstack_networking_floatingip_v2.k8s_node.*.address, count.index)}"
     metadata = {
         ssh_user = "${var.ssh_user}"
         kubespray_groups = "kube-node,k8s-cluster,vault"
     }
+}
+
+resource "openstack_compute_floatingip_associate_v2" "k8s_node" {
+    count = "${var.number_of_k8s_nodes}"
+    floating_ip = "${element(openstack_networking_floatingip_v2.k8s_node.*.address, count.index)}"
+    instance_id = "${element(openstack_compute_instance_v2.k8s_node.*.id, count.index)}"
 }
 
 resource "openstack_compute_instance_v2" "k8s_node_no_floating_ip" {
@@ -185,7 +201,7 @@ resource "openstack_compute_instance_v2" "k8s_node_no_floating_ip" {
         kubespray_groups = "kube-node,k8s-cluster,vault,no-floating"
     }
     provisioner "local-exec" {
-	command = "sed s/USER/${var.ssh_user}/ contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element(openstack_networking_floatingip_v2.k8s_master.*.address, 0)}/ > contrib/terraform/openstack/group_vars/no-floating.yml"        
+	command = "sed s/USER/${var.ssh_user}/ contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element(openstack_networking_floatingip_v2.k8s_master.*.address, 0)}/ > contrib/terraform/openstack/group_vars/no-floating.yml"
     }
 }
 
@@ -214,7 +230,7 @@ resource "openstack_compute_instance_v2" "glusterfs_node_no_floating_ip" {
         volume_id = "${element(openstack_blockstorage_volume_v2.glusterfs_volume.*.id, count.index)}"
     }
     provisioner "local-exec" {
-	command = "sed s/USER/${var.ssh_user}/ contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element(openstack_networking_floatingip_v2.k8s_master.*.address, 0)}/ > contrib/terraform/openstack/group_vars/gfs-cluster.yml"        
+	command = "sed s/USER/${var.ssh_user}/ contrib/terraform/openstack/ansible_bastion_template.txt | sed s/BASTION_ADDRESS/${element(openstack_networking_floatingip_v2.k8s_master.*.address, 0)}/ > contrib/terraform/openstack/group_vars/gfs-cluster.yml"
     }
 }
 
