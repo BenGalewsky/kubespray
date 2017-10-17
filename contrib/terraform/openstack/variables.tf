@@ -38,6 +38,8 @@ variable "number_of_gfs_nodes_no_floating_ip" {
   default = 0
 }
 
+
+
 variable "gfs_volume_size_in_gb" {
   default = 75
 }
@@ -71,6 +73,10 @@ variable "flavor_bastion" {
   default = 3
 }
 
+variable "flavor_etcd" {
+  default = 3
+}
+
 variable "flavor_k8s_master" {
   default = 3
 }
@@ -79,9 +85,6 @@ variable "flavor_k8s_node" {
   default = 3
 }
 
-variable "flavor_etcd" {
-  default = 3
-}
 
 variable "flavor_gfs_node" {
   default = 3
