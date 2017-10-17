@@ -26,6 +26,14 @@ variable "number_of_gfs_nodes_no_floating_ip" {
   default = 0
 }
 
+variable "number_of_k8s_masters_no_etcd" {
+  default = 0
+}
+
+variable "number_of_etcd" {
+  default = 0
+}
+
 variable "gfs_volume_size_in_gb" {
   default = 75
 }
@@ -56,6 +64,10 @@ variable "ssh_user_gfs" {
 }
 
 variable "flavor_bastion" {
+  default = 3
+}
+
+variable "flavor_etcd" {
   default = 3
 }
 
