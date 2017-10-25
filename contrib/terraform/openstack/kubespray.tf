@@ -1,3 +1,5 @@
+
+
 resource "openstack_networking_router_v2" "k8s" {
   name             = "internal"
   admin_state_up   = "true"
@@ -30,17 +32,34 @@ resource "openstack_compute_keypair_v2" "k8s" {
 resource "openstack_compute_secgroup_v2" "k8s_master" {
     name = "${var.cluster_name}-k8s-master"
     description = "${var.cluster_name} - Kubernetes Master"
-}
-
-resource "openstack_compute_secgroup_v2" "k8s" {
-    name = "${var.cluster_name}-k8s"
-    description = "${var.cluster_name} - Kubernetes"
     rule {
         ip_protocol = "tcp"
         from_port = "22"
         to_port = "22"
         cidr = "0.0.0.0/0"
     }
+    rule {
+        ip_protocol = "tcp"
+        from_port = "6443"
+        to_port = "6443"
+        cidr = "0.0.0.0/0"
+    }
+}
+
+resource "openstack_compute_secgroup_v2" "bastion" {
+    name = "${var.cluster_name}-bastion"
+    description = "${var.cluster_name} - Bastion Server"
+    rule {
+        ip_protocol = "tcp"
+        from_port = "22"
+        to_port = "22"
+        cidr = "0.0.0.0/0"
+    }
+}
+
+resource "openstack_compute_secgroup_v2" "k8s" {
+    name = "${var.cluster_name}-k8s"
+    description = "${var.cluster_name} - Kubernetes"
     rule {
         ip_protocol = "icmp"
         from_port = "-1"
@@ -89,6 +108,7 @@ resource "openstack_compute_instance_v2" "bastion" {
         name = "${var.network_name}"
     }
     security_groups = [ "${openstack_compute_secgroup_v2.k8s.name}",
+                        "${openstack_compute_secgroup_v2.bastion.name}",
                         "default" ]
     metadata = {
         ssh_user = "${var.ssh_user}"
