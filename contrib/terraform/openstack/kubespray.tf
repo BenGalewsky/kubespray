@@ -264,6 +264,12 @@ resource "openstack_compute_instance_v2" "k8s_node" {
     depends_on = [ "openstack_networking_network_v2.k8s" ]
 }
 
+resource "openstack_compute_floatingip_associate_v2" "k8s_node" {
+    count = "${var.number_of_k8s_masters}"
+    floating_ip = "${element(openstack_networking_floatingip_v2.k8s_node.*.address, count.index)}"
+    instance_id = "${element(openstack_compute_instance_v2.k8s_node.*.id, count.index)}"
+}
+
 resource "openstack_compute_instance_v2" "k8s_node_no_floating_ip" {
     name = "${var.cluster_name}-k8s-node-nf-${count.index+1}"
     count = "${var.number_of_k8s_nodes_no_floating_ip}"
