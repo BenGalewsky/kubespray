@@ -34,12 +34,6 @@ resource "openstack_compute_secgroup_v2" "k8s_master" {
     description = "${var.cluster_name} - Kubernetes Master"
     rule {
         ip_protocol = "tcp"
-        from_port = "22"
-        to_port = "22"
-        cidr = "0.0.0.0/0"
-    }
-    rule {
-        ip_protocol = "tcp"
         from_port = "6443"
         to_port = "6443"
         cidr = "0.0.0.0/0"
@@ -152,6 +146,7 @@ resource "openstack_compute_instance_v2" "k8s_master" {
         name = "${var.network_name}"
     }
     security_groups = [ "${openstack_compute_secgroup_v2.k8s_master.name}",
+                        "${openstack_compute_secgroup_v2.bastion.name}",
                         "${openstack_compute_secgroup_v2.k8s.name}",
                         "default" ]
     metadata = {
@@ -212,6 +207,7 @@ resource "openstack_compute_instance_v2" "k8s_node" {
         name = "${var.network_name}"
     }
     security_groups = [ "${openstack_compute_secgroup_v2.k8s.name}",
+                        "${openstack_compute_secgroup_v2.bastion.name}",
                         "default" ]
     metadata = {
         ssh_user = "${var.ssh_user}"
