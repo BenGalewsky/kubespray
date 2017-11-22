@@ -108,6 +108,11 @@ resource "openstack_compute_instance_v2" "k8s_master" {
         kubespray_groups = "etcd,kube-master,kube-node,k8s-cluster,vault"
         depends_on = "${var.network_id}"
     }
+
+    provisioner "local-exec" {
+    command = "sed s/{{MASTER_DNS}}/${var.k8s_master_fips[0]}/ contrib/terraform/openstack/save_kubernetes_config.template.txt > artifacts/save_kubernetes_config.sh"
+    }
+
     user_data = "${var.user_data}"
 }
 
